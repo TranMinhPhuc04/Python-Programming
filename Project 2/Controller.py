@@ -1,5 +1,4 @@
 from Model import StudentModel
-import psycopg2
 
 class StudentController:
     def __init__(self, host, user, password, dbname):
@@ -11,18 +10,21 @@ class StudentController:
     @staticmethod
     def login(username, password):
         try:
-            # Kết nối đến cơ sở dữ liệu
-            conn = psycopg2.connect(
-                host='127.0.0.1',  
-                user='postgres',    
-                password='123456',  
-                dbname='student_management'  
-            )
-            # Trả về kết nối cơ sở dữ liệu nếu kết nối thành công
-            return conn
+            # Kết nối đến cơ sở dữ liệu bằng phương thức từ StudentModel
+            conn = StudentModel.database_connection()
+
+            # Kiểm tra tài khoản người dùng
+            user = StudentModel.verify_user_credentials(conn, username, password)
+
+            if user:
+                # Trả về kết nối nếu đăng nhập thành công
+                return conn
+            else:
+                raise Exception("Tên người dùng hoặc mật khẩu không hợp lệ")
+
         except Exception as e:
-            # Xử lý lỗi khi kết nối đến cơ sở dữ liệu
-            raise Exception(f"Lỗi kết nối: {str(e)}")
+            raise Exception(f"Lỗi đăng nhập: {str(e)}")
+
 
     def get_all_students(self, connection):
         return StudentModel.get_all_students(connection)

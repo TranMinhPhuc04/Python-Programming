@@ -1,4 +1,27 @@
+import psycopg2
 class StudentModel:
+    @staticmethod
+    def database_connection():
+        try:
+            connection = psycopg2.connect(
+                host='127.0.0.1',  
+                user='postgres',    
+                password='123456',  
+                dbname='student_management'  
+            )
+            return connection
+        except Exception as e:
+            raise Exception(f"Lỗi kết nối cơ sở dữ liệu: {str(e)}")
+
+    @staticmethod
+    def verify_user_credentials(connection, username, password):
+        try:
+            with connection.cursor() as curs:
+                curs.execute("SELECT * FROM users WHERE username = %s AND password = %s", (username, password))
+                user = curs.fetchone()
+                return user
+        except Exception as e:
+            raise Exception(f"Lỗi khi kiểm tra thông tin đăng nhập: {str(e)}")
     @staticmethod
     def get_all_students(connection):
         try:
