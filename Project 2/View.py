@@ -28,51 +28,38 @@ class Login:
         login_button = Button(self.root, text="Đăng nhập", command=self.check_login, font=("Helvetica", 12, "bold"),
                               fg="white", bg="#4CAF50", activebackground="#45a049", cursor="hand2", bd=0)
         login_button.pack(pady=10)
-        login_button.bind("<Enter>", lambda e: login_button.config(bg="#45a049"))  # Đổi màu khi di chuột vào nút
-        login_button.bind("<Leave>", lambda e: login_button.config(bg="#4CAF50"))  # Trả lại màu khi di chuột ra
+        login_button.bind("<Enter>", lambda e: login_button.config(bg="#45a049"))
+        login_button.bind("<Leave>", lambda e: login_button.config(bg="#4CAF50"))
 
-    # Hàm kiểm tra đăng nhập
     def check_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
         try:
-            # Gọi hàm login từ Controller
-            result = StudentController.login(username, password)  
-            if result:
+            # Gọi hàm login từ Controller để lấy kết nối cơ sở dữ liệu
+            connection = StudentController.login(username, password)
+            if connection:
                 messagebox.showinfo("Đăng nhập thành công", "Chào mừng bạn đến với hệ thống!")
                 self.root.destroy()  # Đóng cửa sổ đăng nhập
-                self.open_management_form(username, password)  # Mở giao diện quản lý
+                self.open_management_form(connection)  # Truyền kết nối vào giao diện quản lý
             else:
                 messagebox.showerror("Đăng nhập thất bại", "Tên người dùng hoặc mật khẩu không hợp lệ.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    # Hàm mở giao diện quản lý và truyền thông tin đăng nhập
-    def open_management_form(self, username, password):
+    def open_management_form(self, connection):
         root = Tk()
-        # Truyền thông tin đăng nhập vào giao diện quản lý (username và password)
-        app = Management(root, '127.0.0.1', username, password, 'student_management')
+        app = Management(root, connection)  # Truyền kết nối vào đây
         root.mainloop()
 
 
-
 class Management:
-    def __init__(self, root, host, username, password, dbname):
+    def __init__(self, root, connection):
         self.window = root
-        self.host = host
-        self.username = username
-        self.password = password
-        self.dbname = dbname
+        self.connection = connection  # Nhận kết nối từ login
         
         self.window.title("Quản lý sinh viên")
         self.window.geometry("850x500")
         self.window.config(bg="white")
-        
-        # Khai báo thông tin kết nối cơ sở dữ liệu
-        self.host = '127.0.0.1'
-        self.user = 'postgres'
-        self.password = '123456'
-        self.dbname = 'student_management'
 
         # Menu Bar
         self.menu_bar = Menu(self.window)
@@ -231,37 +218,27 @@ class Management:
         self.student_tree.pack(fill=BOTH, expand=True)
         self.refresh_treeview()  # Gọi hàm để làm mới danh sách sinh viên
 
-    # Hàm đăng xuất
-    def logout(self):
-        self.window.destroy()
-        root = Tk()
-        Login(root)
-        root.mainloop()
-
     # Hàm làm mới Treeview
     def refresh_treeview(self):
-        # Xóa tất cả các mục trong treeview
         for i in self.student_tree.get_children():
             self.student_tree.delete(i)
-
+        
         try:
-            # Gọi phương thức từ model để lấy danh sách sinh viên
-            rows = StudentModel.get_all_students(self.host, self.user, self.password, self.dbname)
+            # Gọi phương thức từ model để lấy danh sách sinh viên, sử dụng kết nối hiện tại
+            rows = StudentModel.get_all_students(self.connection)
 
-            # Thêm các hàng vào treeview
             for row in rows:
                 self.student_tree.insert('', 'end', values=row)
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    # Hàm tìm kiếm sinh viên theo số điện thoại
     def search_student(self):
         phone = self.search_entry.get()
         if phone == "":
             messagebox.showerror("Error", "Vui lòng nhập số điện thoại để tìm kiếm!")
         else:
             try:
-                row = StudentModel.search_student_by_phone(phone, self.host, self.user, self.password, self.dbname)  # Gọi phương thức tìm kiếm từ Model
+                row = StudentModel.search_student_by_phone(self.connection, phone)
                 if row:
                     # Hiển thị thông tin tìm thấy lên các trường nhập liệu
                     self.f_name_entry.delete(0, END)
@@ -285,7 +262,6 @@ class Management:
                     self.email_entry.delete(0, END)
                     self.email_entry.insert(0, row[9])
 
-                    # Hiển thị các nút cập nhật và xóa
                     self.update_button.grid(row=0, column=1, padx=10, pady=5)
                     self.delete_button.grid(row=0, column=2, padx=10, pady=5)
                 else:
@@ -293,13 +269,11 @@ class Management:
             except Exception as e:
                 messagebox.showerror("Error", f"Lỗi khi tìm sinh viên: {str(e)}")
 
-    # Hàm thêm sinh viên mới
     def add_student(self):
         if self.f_name_entry.get() == "" or self.l_name_entry.get() == "":
             messagebox.showerror("Error", "Vui lòng điền đầy đủ thông tin!")
         else:
             try:
-                # Dữ liệu sinh viên lấy từ các trường nhập liệu
                 student_data = (
                     self.f_name_entry.get(),
                     self.l_name_entry.get(),
@@ -313,21 +287,19 @@ class Management:
                     self.email_entry.get()
                 )
 
-                StudentModel.add_student(student_data, self.host, self.user, self.password, self.dbname)  # Gọi phương thức thêm sinh viên từ Model
+                StudentModel.add_student(self.connection, student_data)
                 messagebox.showinfo("Success", "Thêm sinh viên thành công!")
                 self.reset_fields()
                 self.refresh_treeview()
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
-    # Hàm cập nhật sinh viên
     def update_student(self):
         phone = self.contact_entry.get()
         if phone == "":
             messagebox.showerror("Error", "Vui lòng nhập số điện thoại!")
         else:
             try:
-                # Kiểm tra các trường dữ liệu số, thay chuỗi rỗng bằng None
                 year = self.year_entry.get() if self.year_entry.get() != "" else None
                 age = self.age_entry.get() if self.age_entry.get() != "" else None
 
@@ -336,35 +308,33 @@ class Management:
                     self.l_name_entry.get(),
                     self.course_entry.get(),
                     self.subject_entry.get(),
-                    year,    # sử dụng None nếu giá trị rỗng
-                    age,     # sử dụng None nếu giá trị rỗng
+                    year,
+                    age,
                     self.gender_entry.get(),
                     self.birth_entry.get(),
                     self.email_entry.get()
                 )
 
-                StudentModel.update_student(student_data, phone, self.host, self.user, self.password, self.dbname)
+                StudentModel.update_student(self.connection, student_data, phone)
                 messagebox.showinfo("Success", "Cập nhật thành công!")
                 self.reset_fields()
                 self.refresh_treeview()
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
-    # Hàm xóa sinh viên
     def delete_student(self):
         phone = self.contact_entry.get()
         if phone == "":
             messagebox.showerror("Error", "Vui lòng nhập số điện thoại!")
         else:
             try:
-                StudentModel.delete_student(phone, self.host, self.user, self.password, self.dbname)
+                StudentModel.delete_student(self.connection, phone)
                 messagebox.showinfo("Success", "Xóa sinh viên thành công!")
                 self.reset_fields()
                 self.refresh_treeview()
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
-    # Hàm xóa trắng các trường nhập liệu  
     def reset_fields(self):
         self.f_name_entry.delete(0, END)
         self.l_name_entry.delete(0, END)
@@ -378,6 +348,11 @@ class Management:
         self.email_entry.delete(0, END)
         self.search_entry.delete(0, END)
 
-        # Ẩn các nút cập nhật và xóa sau khi xóa trắng
         self.update_button.grid_remove()
         self.delete_button.grid_remove()
+
+    def logout(self):
+        self.window.destroy()
+        root = Tk()
+        Login(root)
+        root.mainloop()
