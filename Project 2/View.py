@@ -10,52 +10,71 @@ class Login:
         self.root.title("Login")
         self.root.geometry("350x350")
         self.root.configure(bg="#f2f2f2")
-        self.root.iconbitmap("./favicon.ico")
 
+        # Tiêu đề đăng nhập
         Label(self.root, text="Đăng nhập vào hệ thống", font=("Helvetica", 16, "bold"), fg="#333333", bg="#f2f2f2").pack(pady=20)
 
+        # Nhãn và ô nhập tài khoản
         Label(self.root, text="Tài khoản", font=("Helvetica", 12), bg="#f2f2f2").pack(pady=(10, 0))
         self.username_entry = Entry(self.root, font=("Helvetica", 12), bd=1, relief=SOLID)
         self.username_entry.pack(pady=(5, 10), ipadx=5, ipady=5)
 
+        # Nhãn và ô nhập mật khẩu
         Label(self.root, text="Mật khẩu", font=("Helvetica", 12), bg="#f2f2f2").pack(pady=(10, 0))
         self.password_entry = Entry(self.root, show="*", font=("Helvetica", 12), bd=1, relief=SOLID)
         self.password_entry.pack(pady=(5, 20), ipadx=5, ipady=5)
 
+        # Nút đăng nhập
         login_button = Button(self.root, text="Đăng nhập", command=self.check_login, font=("Helvetica", 12, "bold"),
                               fg="white", bg="#4CAF50", activebackground="#45a049", cursor="hand2", bd=0)
         login_button.pack(pady=10)
-        login_button.bind("<Enter>", lambda e: login_button.config(bg="#45a049"))
-        login_button.bind("<Leave>", lambda e: login_button.config(bg="#4CAF50"))
+        login_button.bind("<Enter>", lambda e: login_button.config(bg="#45a049"))  # Đổi màu khi di chuột vào nút
+        login_button.bind("<Leave>", lambda e: login_button.config(bg="#4CAF50"))  # Trả lại màu khi di chuột ra
 
+    # Hàm kiểm tra đăng nhập
     def check_login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
         try:
-            result = StudentController.login(username, password)
+            # Gọi hàm login từ Controller
+            result = StudentController.login(username, password)  
             if result:
                 messagebox.showinfo("Đăng nhập thành công", "Chào mừng bạn đến với hệ thống!")
-                self.root.destroy()
-                self.open_management_form()
+                self.root.destroy()  # Đóng cửa sổ đăng nhập
+                self.open_management_form(username, password)  # Mở giao diện quản lý
             else:
                 messagebox.showerror("Đăng nhập thất bại", "Tên người dùng hoặc mật khẩu không hợp lệ.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    def open_management_form(self):
+    # Hàm mở giao diện quản lý và truyền thông tin đăng nhập
+    def open_management_form(self, username, password):
         root = Tk()
-        app = Management(root)
+        # Truyền thông tin đăng nhập vào giao diện quản lý (username và password)
+        app = Management(root, '127.0.0.1', username, password, 'student_management')
         root.mainloop()
 
 
+
 class Management:
-    def __init__(self, root):
+    def __init__(self, root, host, username, password, dbname):
         self.window = root
-        self.window.title("Trần Minh Phúc")
+        self.host = host
+        self.username = username
+        self.password = password
+        self.dbname = dbname
+        
+        self.window.title("Quản lý sinh viên")
         self.window.geometry("850x500")
         self.window.config(bg="white")
-        self.window.iconbitmap("./favicon.ico")
-         # Menu Bar
+        
+        # Khai báo thông tin kết nối cơ sở dữ liệu
+        self.host = '127.0.0.1'
+        self.user = 'postgres'
+        self.password = '123456'
+        self.dbname = 'student_management'
+
+        # Menu Bar
         self.menu_bar = Menu(self.window)
         self.window.config(menu=self.menu_bar)
 
@@ -100,13 +119,15 @@ class Management:
     def show_author(self):
         messagebox.showinfo("Author", "Người phát triển: Trần Minh Phúc\nLiên hệ: minhphuctn04@gmail.com")
 
+    # Hàm tạo nội dung cho tab Admin
     def create_admin_tab(self):
         Label(self.admin_tab, text="Quản lý sinh viên (Admin)", font=("Helvetica", 16, "bold"), bg="green").pack(pady=20, fill="x")
         
-        # Frame for Input Fields
+        # Frame để chứa các trường nhập liệu
         input_frame = Frame(self.admin_tab, bg="white")
         input_frame.pack(pady=10)
 
+        # Các nhãn và ô nhập liệu cho thông tin sinh viên
         Label(input_frame, text="Họ", font=("Helvetica", 12), bg="white").grid(row=0, column=0, padx=10, pady=5, sticky=W)
         self.f_name_entry = Entry(input_frame, font=("Helvetica", 12), bg="lightgrey")
         self.f_name_entry.grid(row=0, column=1, padx=10, pady=5)
@@ -147,7 +168,7 @@ class Management:
         self.email_entry = Entry(input_frame, font=("Helvetica", 12), bg="lightgrey")
         self.email_entry.grid(row=4, column=3, padx=10, pady=5)
 
-        # Search Frame
+        # Frame tìm kiếm sinh viên theo số điện thoại
         search_frame = Frame(self.admin_tab, bg="white")
         search_frame.pack(pady=10)
 
@@ -157,29 +178,33 @@ class Management:
         Button(search_frame, text="Tìm kiếm", command=self.search_student, font=("Helvetica", 12), fg="white", bg="#4CAF50",
                cursor="hand2", bd=0).grid(row=0, column=2, padx=10, pady=5)
 
-        # Buttons Frame
+        # Frame chứa các nút Thêm sinh viên, Xóa tất cả, Cập nhật và Xóa sinh viên
         buttons_frame = Frame(self.admin_tab, bg="white")
         buttons_frame.pack(pady=10)
 
-        # Create update and delete buttons but don't pack or grid them initially
         self.update_button = Button(buttons_frame, text="Cập nhật", command=self.update_student, font=("Helvetica", 12), fg="white", bg="#FF9800",
                                     cursor="hand2", bd=0)
         self.delete_button = Button(buttons_frame, text="Xóa", command=self.delete_student, font=("Helvetica", 12), fg="white", bg="#F44336",
                                     cursor="hand2", bd=0)
 
+        # Các nút thêm sinh viên và xóa tất cả
         Button(buttons_frame, text="Thêm sinh viên", command=self.add_student, font=("Helvetica", 12), fg="white", bg="#4CAF50",
                cursor="hand2", bd=0).grid(row=0, column=0, padx=10, pady=5)
         Button(buttons_frame, text="Xóa tất cả", command=self.reset_fields, font=("Helvetica", 12), fg="white", bg="#607D8B",
                cursor="hand2", bd=0).grid(row=0, column=3, padx=10, pady=5)
 
+    # Hàm tạo nội dung cho tab Treeview (Danh sách sinh viên)
     def create_treeview_tab(self):
         Label(self.treeview_tab, text="Danh sách Sinh Viên", font=("Helvetica", 16, "bold"), bg="white").pack(pady=20)
 
+        # Frame chứa danh sách sinh viên
         self.list_frame = Frame(self.treeview_tab, bg="white", bd=2, relief=RIDGE)
         self.list_frame.pack(fill=BOTH, expand=True, padx=10, pady=10)
 
+        # Cấu hình Treeview để hiển thị danh sách sinh viên
         self.student_tree = Treeview(self.list_frame, columns=("f_name", "l_name", "course", "subject", "year", "age", "gender", "birth", "contact", "email"), show="headings")
 
+        # Đặt tiêu đề cột và thiết lập độ rộng cột cho Treeview
         self.student_tree.heading("f_name", text="Họ")
         self.student_tree.heading("l_name", text="Tên")
         self.student_tree.heading("course", text="Khóa học")
@@ -191,7 +216,7 @@ class Management:
         self.student_tree.heading("contact", text="Số liên hệ")
         self.student_tree.heading("email", text="Email")
 
-        # Set column widths
+        # Đặt độ rộng cho các cột
         self.student_tree.column("f_name", width=40)
         self.student_tree.column("l_name", width=40)
         self.student_tree.column("course", width=60)
@@ -204,14 +229,16 @@ class Management:
         self.student_tree.column("email", width=160)
 
         self.student_tree.pack(fill=BOTH, expand=True)
-        self.refresh_treeview()
-        
+        self.refresh_treeview()  # Gọi hàm để làm mới danh sách sinh viên
+
+    # Hàm đăng xuất
     def logout(self):
         self.window.destroy()
         root = Tk()
         Login(root)
         root.mainloop()
-        
+
+    # Hàm làm mới Treeview
     def refresh_treeview(self):
         # Xóa tất cả các mục trong treeview
         for i in self.student_tree.get_children():
@@ -219,7 +246,7 @@ class Management:
 
         try:
             # Gọi phương thức từ model để lấy danh sách sinh viên
-            rows = StudentModel.get_all_students()
+            rows = StudentModel.get_all_students(self.host, self.user, self.password, self.dbname)
 
             # Thêm các hàng vào treeview
             for row in rows:
@@ -227,16 +254,16 @@ class Management:
         except Exception as e:
             messagebox.showerror("Error", str(e))
 
-    
+    # Hàm tìm kiếm sinh viên theo số điện thoại
     def search_student(self):
         phone = self.search_entry.get()
         if phone == "":
             messagebox.showerror("Error", "Vui lòng nhập số điện thoại để tìm kiếm!")
         else:
             try:
-                row = StudentModel.search_student_by_phone(phone)
+                row = StudentModel.search_student_by_phone(phone, self.host, self.user, self.password, self.dbname)  # Gọi phương thức tìm kiếm từ Model
                 if row:
-                    # Populate fields with data
+                    # Hiển thị thông tin tìm thấy lên các trường nhập liệu
                     self.f_name_entry.delete(0, END)
                     self.f_name_entry.insert(0, row[0])
                     self.l_name_entry.delete(0, END)
@@ -245,14 +272,10 @@ class Management:
                     self.course_entry.insert(0, row[2])
                     self.subject_entry.delete(0, END)
                     self.subject_entry.insert(0, row[3])
-                    
-                    # Gán giá trị cho ô năm học
                     self.year_entry.delete(0, END)
                     self.year_entry.insert(0, row[4] if row[4] is not None else "")
-
                     self.age_entry.delete(0, END)
                     self.age_entry.insert(0, row[5] if row[5] is not None else "")
-                    
                     self.gender_entry.delete(0, END)
                     self.gender_entry.insert(0, row[6])
                     self.birth_entry.delete(0, END)
@@ -262,7 +285,7 @@ class Management:
                     self.email_entry.delete(0, END)
                     self.email_entry.insert(0, row[9])
 
-                    # Make the update and delete buttons visible
+                    # Hiển thị các nút cập nhật và xóa
                     self.update_button.grid(row=0, column=1, padx=10, pady=5)
                     self.delete_button.grid(row=0, column=2, padx=10, pady=5)
                 else:
@@ -270,11 +293,13 @@ class Management:
             except Exception as e:
                 messagebox.showerror("Error", f"Lỗi khi tìm sinh viên: {str(e)}")
 
+    # Hàm thêm sinh viên mới
     def add_student(self):
         if self.f_name_entry.get() == "" or self.l_name_entry.get() == "":
             messagebox.showerror("Error", "Vui lòng điền đầy đủ thông tin!")
         else:
             try:
+                # Dữ liệu sinh viên lấy từ các trường nhập liệu
                 student_data = (
                     self.f_name_entry.get(),
                     self.l_name_entry.get(),
@@ -287,15 +312,15 @@ class Management:
                     self.contact_entry.get(),
                     self.email_entry.get()
                 )
-                
-                StudentModel.add_student(student_data)
+
+                StudentModel.add_student(student_data, self.host, self.user, self.password, self.dbname)  # Gọi phương thức thêm sinh viên từ Model
                 messagebox.showinfo("Success", "Thêm sinh viên thành công!")
                 self.reset_fields()
                 self.refresh_treeview()
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
-
+    # Hàm cập nhật sinh viên
     def update_student(self):
         phone = self.contact_entry.get()
         if phone == "":
@@ -318,26 +343,28 @@ class Management:
                     self.email_entry.get()
                 )
 
-                StudentModel.update_student(student_data, phone)
+                StudentModel.update_student(student_data, phone, self.host, self.user, self.password, self.dbname)
                 messagebox.showinfo("Success", "Cập nhật thành công!")
                 self.reset_fields()
                 self.refresh_treeview()
             except Exception as e:
                 messagebox.showerror("Error", str(e))
 
+    # Hàm xóa sinh viên
     def delete_student(self):
         phone = self.contact_entry.get()
         if phone == "":
             messagebox.showerror("Error", "Vui lòng nhập số điện thoại!")
         else:
             try:
-                StudentModel.delete_student(phone)
+                StudentModel.delete_student(phone, self.host, self.user, self.password, self.dbname)
                 messagebox.showinfo("Success", "Xóa sinh viên thành công!")
                 self.reset_fields()
                 self.refresh_treeview()
             except Exception as e:
                 messagebox.showerror("Error", str(e))
-                
+
+    # Hàm xóa trắng các trường nhập liệu  
     def reset_fields(self):
         self.f_name_entry.delete(0, END)
         self.l_name_entry.delete(0, END)
@@ -350,9 +377,7 @@ class Management:
         self.contact_entry.delete(0, END)
         self.email_entry.delete(0, END)
         self.search_entry.delete(0, END)
-        
-        # Hide the update and delete buttons again after reset
+
+        # Ẩn các nút cập nhật và xóa sau khi xóa trắng
         self.update_button.grid_remove()
         self.delete_button.grid_remove()
-
-             
