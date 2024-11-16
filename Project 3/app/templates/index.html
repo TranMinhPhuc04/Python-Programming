@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}
+Danh sách Sinh viên
+{% endblock %}
+
+{% block content %}
+<!-- Form Thêm hoặc Sửa Sinh viên -->
+<form method="POST" action="{% if editing_student %}{{ url_for('student.edit_student', mssv=editing_student.mssv) }}{% else %}{{ url_for('student.index') }}{% endif %}">
+    <div class="mb-3">
+        <label for="mssv" class="form-label">MSSV</label>
+        <input type="text" name="mssv" id="mssv" class="form-control" 
+               value="{% if editing_student %}{{ editing_student.mssv }}{% endif %}" 
+               {% if editing_student %}readonly{% endif %} required>
+    </div>
+    <div class="mb-3">
+        <label for="name" class="form-label">Họ và Tên</label>
+        <input type="text" name="name" id="name" class="form-control" 
+               value="{% if editing_student %}{{ editing_student.name }}{% endif %}" required>
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" name="email" id="email" class="form-control" 
+               value="{% if editing_student %}{{ editing_student.email }}{% endif %}" required>
+    </div>
+    <div class="mb-3">
+        <label for="major" class="form-label">Ngành</label>
+        <input type="text" name="major" id="major" class="form-control" 
+               value="{% if editing_student %}{{ editing_student.major }}{% endif %}">
+    </div>
+    <button type="submit" class="btn btn-primary">{% if editing_student %}Cập nhật{% else %}Thêm{% endif %}</button>
+</form>
+
+
+<!-- Danh sách Sinh viên -->
+<table class="table table-striped mt-5">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>MSSV</th>
+            <th>Họ và Tên</th>
+            <th>Email</th>
+            <th>Ngành</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in students %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ student.mssv }}</td>
+            <td>{{ student.name }}</td>
+            <td>{{ student.email }}</td>
+            <td>{{ student.major }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('student.delete_student', mssv=student.mssv) }}" style="display: inline;">
+                    <button class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa sinh viên này?');">Xóa</button>
+                </form>
+                <a href="{{ url_for('student.edit_student', mssv=student.mssv) }}" class="btn btn-warning btn-sm">Sửa</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

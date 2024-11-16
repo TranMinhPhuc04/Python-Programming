@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Đăng ký Môn học{% endblock %}
+{% block content %}
+<h2>Đăng ký Môn học</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label for="student_mssv" class="form-label">Chọn Sinh viên</label>
+        <select name="student_mssv" id="student_mssv" class="form-control" required>
+            <option value="">-- Chọn sinh viên --</option>
+            {% for student in students %}
+            <option value="{{ student.mssv }}">{{ student.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="course_id" class="form-label">Chọn Môn học</label>
+        <select name="course_id" id="course_id" class="form-control" required>
+            <option value="">-- Chọn môn học --</option>
+            {% for course in courses %}
+            <option value="{{ course.course_id }}">{{ course.course_name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Đăng ký</button>
+</form>
+
+<h3 class="mt-5">Danh sách Đăng ký</h3>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Sinh viên</th>
+            <th>Môn học</th>
+            <th>Ngày đăng ký</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for enrollment in enrollments %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ enrollment.student.name }}</td>
+            <td>{{ enrollment.course.course_name }}</td>
+            <td>{{ enrollment.enrollment_date }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('student.unenroll', enrollment_id=enrollment.enrollment_id) }}">
+                    <button class="btn btn-danger btn-sm">Hủy</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
