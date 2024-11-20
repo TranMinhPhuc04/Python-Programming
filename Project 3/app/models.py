@@ -1,4 +1,5 @@
 from app import db
+from sqlalchemy import CheckConstraint
 
 
 class User(db.Model):
@@ -12,7 +13,7 @@ class Student(db.Model):
     __tablename__ = 'students'
     mssv = db.Column(db.String, primary_key=True)
     name = db.Column(db.String, nullable=False)
-    email = db.Column(db.String, nullable=False)
+    email = db.Column(db.String, unique=True, nullable=False)
     major = db.Column(db.String, nullable=True)
     enrollments = db.relationship('Enrollment', backref='student', lazy=True)
 
@@ -20,9 +21,13 @@ class Student(db.Model):
 class Course(db.Model):
     __tablename__ = 'courses'
     course_id = db.Column(db.Integer, primary_key=True)
-    course_name = db.Column(db.String, nullable=False)
+    course_name = db.Column(db.String, unique=True, nullable=False)
     credits = db.Column(db.Integer, nullable=False)
     enrollments = db.relationship('Enrollment', backref='course', lazy=True)
+    # Thêm ràng buộc kiểm tra cho số tín chỉ
+    __table_args__ = (
+        CheckConstraint('credits > 0', name='check_credits_positive'),
+    )
 
 
 class Enrollment(db.Model):

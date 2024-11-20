@@ -87,7 +87,9 @@ def courses():
         else:
             try:
                 credits = int(credits)  # Chuyển đổi số tín chỉ sang kiểu số
-                if course_id:  # Nếu có course_id, thực hiện chỉnh sửa
+                if credits <= 0:  # Kiểm tra nếu số tín chỉ <= 0
+                    flash('Số tín chỉ phải lớn hơn 0!', 'danger')
+                elif course_id:  # Nếu có course_id, thực hiện chỉnh sửa
                     course = Course.query.get(course_id)
                     if course:
                         course.course_name = course_name
